@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#09070a">
+<title>Buscar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09070a;
+    --card: rgba(18,15,19,.86);
+    --border: rgba(255,255,255,.08);
+    --text: #f4eef2;
+    --muted: #9a919a;
+    --accent: #ffffff;
+    --on-accent: #000000;
+    --grad: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #000));
+    --pad: clamp(14px, 4.5vw, 26px);
+    --nav-h: 64px;
+    --btn: clamp(40px, 11vw, 48px);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+  html { height: 100%; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 80px); -webkit-text-size-adjust: 100%; }
+  body {
+    min-height: 100%; background: var(--bg); color: var(--text);
+    font-family: "Outfit", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 40px);
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(70% 45% at 15% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%),
+      radial-gradient(60% 40% at 100% 55%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+      radial-gradient(60% 40% at 0% 100%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+  }
+  a { color: inherit; text-decoration: none; }
+  button, input { font: inherit; color: inherit; }
+  .app { max-width: 720px; margin: 0 auto; padding: 0 var(--pad); }
+  [hidden] { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .view { animation: in .35s cubic-bezier(.4,0,.2,1); }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 calc(-1 * var(--pad)); padding: 14px var(--pad) 12px;
+    background: rgba(9,7,10,.55);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+  .menu-btn {
+    flex: none; width: var(--btn); aspect-ratio: 1; border-radius: 50%; cursor: pointer;
+    background: var(--grad); color: var(--on-accent); border: 1px solid var(--border);
+    display: grid; place-items: center; font-weight: 600; font-size: 1.05rem;
+  }
+  .menu-btn svg { width: 22px; height: 22px; }
+  .spacer { flex: none; width: var(--btn); }
+  .search {
+    flex: 1; min-width: 0; max-width: 480px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px; background: #0c0a0d; border: 1px solid var(--border);
+    border-radius: 999px; padding: 0 8px 0 16px; height: var(--btn);
+  }
+  .search:focus-within { border-color: var(--accent); }
+  .search > svg { flex: none; width: 20px; height: 20px; color: var(--muted); }
+  .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; font-size: 1rem; }
+  .search input::placeholder { color: var(--muted); }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .clear {
+    flex: none; width: 32px; aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer;
+    background: rgba(255,255,255,.1); color: var(--text); display: none; place-items: center;
+  }
+  .clear.show { display: grid; }
+  .clear svg { width: 14px; height: 14px; }
+
+  .scrim {
+    position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.55);
+    opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s;
+  }
+  .scrim.open { opacity: 1; visibility: visible; transition: opacity .3s; }
+  .menu {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(300px, 84vw);
+    display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+    background: #100d11; border-right: 1px solid var(--border);
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    box-shadow: 16px 0 40px rgba(0,0,0,.5);
+    transform: translateX(-102%); visibility: hidden;
+    transition: transform .35s cubic-bezier(.4,0,.2,1), visibility 0s .35s;
+  }
+  .menu.open { transform: none; visibility: visible; transition: transform .35s cubic-bezier(.4,0,.2,1); }
+  .menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 14px; font-size: 1.15rem; }
+  .menu-close { width: 40px; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+  .menu-close svg { width: 18px; height: 18px; }
+  .menu-out { margin-top: auto; color: var(--muted); }
+  .menu a { display: block; padding: 12px 14px; border-radius: 14px; font-size: .98rem; }
+  .menu a:hover, .menu a:focus-visible { background: rgba(255,255,255,.08); outline: 0; }
+  .menu-user { padding: 10px 14px 12px; margin-bottom: 4px; color: var(--muted); font-size: .85rem; border-bottom: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 24px;
+    padding: clamp(14px, 4vw, 20px); margin: 6px 0 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-top h2 { font-size: clamp(1rem, 4.4vw, 1.2rem); font-weight: 500; }
+  .count { color: var(--muted); font-size: .85rem; }
+
+  .songs { list-style: none; }
+  .song { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .song:last-child { border-bottom: 0; }
+  .song-name { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .song-name mark { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; border-radius: 4px; padding: 0 1px; }
+  .play {
+    flex: none; width: 42px; aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--grad); color: var(--on-accent); display: grid; place-items: center;
+  }
+  .play:disabled { opacity: .35; cursor: default; }
+  .play svg { width: 18px; height: 18px; }
+  .play:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .empty { color: var(--muted); font-size: .9rem; padding: 4px 0; }
+
+  .nav {
+    position: fixed; z-index: 10; left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    display: flex; justify-content: center; padding: 0 var(--pad); pointer-events: none;
+  }
+  .bar {
+    pointer-events: auto; display: flex; align-items: center; gap: 4px; width: 100%; max-width: 420px;
+    height: var(--nav-h); padding: 6px; border-radius: 999px;
+    background: rgba(16,13,17,.92); border: 1px solid var(--border);
+    box-shadow: 0 12px 34px rgba(0,0,0,.55);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+  .tab {
+    flex: 1 1 0; min-width: 0; height: 100%; border-radius: 999px; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: .68rem; transition: flex-grow .4s cubic-bezier(.4,0,.2,1), background .3s, color .3s;
+  }
+  .tab svg { width: 22px; height: 22px; transition: width .4s cubic-bezier(.4,0,.2,1), height .4s cubic-bezier(.4,0,.2,1); }
+  .tab[aria-current="page"] { flex-grow: 2; background: var(--grad); color: var(--on-accent); font-size: .8rem; font-weight: 500; }
+  .tab[aria-current="page"] svg { width: 28px; height: 28px; }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 360px) { .tab { font-size: .62rem; } .tab[aria-current="page"] { font-size: .72rem; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="menu-btn" id="menuBtn" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">
+      <span id="menuIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>
+    </button>
+    <form class="search" role="search" id="searchForm" novalidate>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <label class="sr-only" for="q">Buscar músicas</label>
+      <input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="O que você quer ouvir?">
+      <button class="clear" id="clearBtn" type="button" aria-label="Limpar busca">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </form>
+    <span class="spacer" aria-hidden="true"></span>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <nav class="menu" id="menu" aria-label="Menu lateral">
+    <div class="menu-head">
+      <strong>Menu</strong>
+      <button class="menu-close" id="menuClose" type="button" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <p class="menu-user" id="menuUser" hidden></p>
+    <a href="/profile">Perfil</a>
+    <a href="/settings">Configurações</a>
+    <a href="/about">Sobre</a>
+    <a class="menu-out" href="/logout">Sair</a>
+  </nav>
+
+  <main class="view" id="v-search">
+    <section class="card" aria-labelledby="sh">
+      <div class="card-top">
+        <h2 id="sh">Músicas</h2>
+        <span class="count" id="count" role="status" aria-live="polite"></span>
+      </div>
+      <ul class="songs" id="songs"></ul>
+      <p class="empty" id="empty" hidden></p>
+    </section>
+  </main>
+</div>
+
+<nav class="nav" aria-label="Principal">
+  <div class="bar">
+    <a class="tab" href="/">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.7 3 9.4V21h6.5v-6.5h5V21H21V9.4z"/></svg><span>Início</span>
+    </a>
+    <a class="tab" href="/search" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar</span>
+    </a>
+    <a class="tab" href="/library">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4v16M10 4v16M15 6l5 13"/></svg><span>Biblioteca</span>
+    </a>
+  </div>
+</nav>
+
+<script id="flask-data" type="application/json">
+{{ payload|tojson }}
+</script>
+<script>
+  var raw = {};
+  try { raw = JSON.parse(document.getElementById('flask-data').textContent) || {}; } catch (e) {}
+  function clean(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'string') {
+      var s = v.trim();
+      return (s === '' || /^(none|null)$/i.test(s)) ? null : s;
+    }
+    return v;
+  }
+  var name = clean(raw.name), color = clean(raw.color), songs = clean(raw.data);
+  var root = document.documentElement;
+
+  var accent = '#ffffff';
+  if (typeof color === 'string' && window.CSS && CSS.supports('color', color)) accent = color;
+  root.style.setProperty('--accent', accent);
+  var probe = document.createElement('span');
+  probe.style.color = accent;
+  document.body.appendChild(probe);
+  var rgb = (getComputedStyle(probe).color.match(/[\d.]+/g) || [255, 255, 255]).map(Number);
+  document.body.removeChild(probe);
+  var lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+  root.style.setProperty('--on-accent', lum > 0.55 ? '#000000' : '#ffffff');
+
+  if (typeof name === 'string') {
+    document.getElementById('menuIcon').textContent = Array.from(name)[0].toUpperCase();
+    var mu = document.getElementById('menuUser');
+    mu.textContent = name; mu.hidden = false;
+  }
+
+  var menuBtn = document.getElementById('menuBtn'), menu = document.getElementById('menu'), scrim = document.getElementById('scrim');
+  function setMenu(open) {
+    menu.classList.toggle('open', open); scrim.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    if (open) menu.querySelector('a').focus();
+  }
+  menuBtn.addEventListener('click', function () { setMenu(!menu.classList.contains('open')); });
+  document.getElementById('menuClose').addEventListener('click', function () { setMenu(false); menuBtn.focus(); });
+  scrim.addEventListener('click', function () { setMenu(false); });
+  menu.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menu.classList.contains('open')) { setMenu(false); menuBtn.focus(); }
+  });
+
+  function norm(str) {
+    var out = '', map = [];
+    for (var i = 0; i < str.length; i++) {
+      var c = str[i].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      for (var j = 0; j < c.length; j++) { out += c[j]; map.push(i); }
+    }
+    return { text: out, map: map };
+  }
+  function ranges(n, terms) {
+    var r = [];
+    terms.forEach(function (t) {
+      var from = 0, idx;
+      while ((idx = n.text.indexOf(t, from)) !== -1) {
+        r.push([n.map[idx], n.map[idx + t.length - 1] + 1]);
+        from = idx + t.length;
+      }
+    });
+    r.sort(function (a, b) { return a[0] - b[0]; });
+    var merged = [];
+    r.forEach(function (x) {
+      var last = merged[merged.length - 1];
+      if (last && x[0] <= last[1]) last[1] = Math.max(last[1], x[1]); else merged.push(x);
+    });
+    return merged;
+  }
+  function highlight(el, text, rs) {
+    el.textContent = '';
+    var pos = 0;
+    rs.forEach(function (r) {
+      if (r[0] > pos) el.appendChild(document.createTextNode(text.slice(pos, r[0])));
+      var mk = document.createElement('mark');
+      mk.textContent = text.slice(r[0], r[1]);
+      el.appendChild(mk);
+      pos = r[1];
+    });
+    if (pos < text.length) el.appendChild(document.createTextNode(text.slice(pos)));
+  }
+
+  var PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  var PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+  var audio = new Audio(), curSrc = null;
+  function showIcon(btn, playing) {
+    btn.innerHTML = playing ? PAUSE : PLAY;
+    btn.setAttribute('aria-label', (playing ? 'Pausar ' : 'Tocar ') + (btn.getAttribute('data-name') || ''));
+  }
+  function refreshIcons() {
+    document.querySelectorAll('#songs .play').forEach(function (b) {
+      showIcon(b, b.getAttribute('data-src') === curSrc && !audio.paused);
+    });
+  }
+  audio.addEventListener('play', refreshIcons);
+  audio.addEventListener('pause', refreshIcons);
+  audio.addEventListener('ended', refreshIcons);
+
+  var items = Array.isArray(songs) ? songs.filter(function (s) { return s && s.music_name; }) : [];
+  items.forEach(function (s) { s.n = norm(String(s.music_name)); });
+
+  var ul = document.getElementById('songs'), empty = document.getElementById('empty'),
+      count = document.getElementById('count'), input = document.getElementById('q'),
+      clearBtn = document.getElementById('clearBtn');
+
+  function render() {
+    var terms = norm(input.value.trim()).text.split(/\s+/).filter(Boolean);
+    var results = items.filter(function (s) {
+      return terms.every(function (t) { return s.n.text.indexOf(t) !== -1; });
+    });
+
+    ul.textContent = '';
+    results.forEach(function (s) {
+      var li = document.createElement('li'); li.className = 'song';
+      var btn = document.createElement('button'); btn.className = 'play'; btn.type = 'button';
+      btn.setAttribute('data-name', s.music_name);
+      btn.setAttribute('data-src', s.src || '');
+      if (!s.src) btn.disabled = true;
+      var nm = document.createElement('span'); nm.className = 'song-name';
+      highlight(nm, String(s.music_name), terms.length ? ranges(s.n, terms) : []);
+      btn.addEventListener('click', function () {
+        if (curSrc === s.src && !audio.paused) { audio.pause(); return; }
+        if (curSrc !== s.src) { curSrc = s.src; audio.src = s.src; }
+        audio.play().catch(function () { refreshIcons(); });
+      });
+      li.appendChild(btn); li.appendChild(nm); ul.appendChild(li);
+    });
+    refreshIcons();
+
+    if (!items.length) {
+      empty.textContent = 'Nenhuma música salva ainda.'; empty.hidden = false;
+    } else if (!results.length) {
+      empty.textContent = 'Nenhuma música encontrada. Tente outra palavra ou parte do nome.'; empty.hidden = false;
+    } else {
+      empty.hidden = true;
+    }
+    count.textContent = results.length + (results.length === 1 ? ' música' : ' músicas');
+    clearBtn.classList.toggle('show', input.value.length > 0);
+  }
+
+  input.addEventListener('input', render);
+  document.getElementById('searchForm').addEventListener('submit', function (e) { e.preventDefault(); input.blur(); });
+  clearBtn.addEventListener('click', function () { input.value = ''; render(); input.focus(); });
+  render();
+</script>
+</body>
+</html>

@@ -46,12 +46,10 @@
   .view { animation: in .35s cubic-bezier(.4,0,.2,1); }
   @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-  /* Cabeçalho */
   .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 14px; }
   .head h1 { font-size: clamp(1.45rem, 7vw, 2rem); font-weight: 400; letter-spacing: -.02em; line-height: 1.1; }
   .head h1 em { font-style: normal; color: var(--accent); }
   .head p { margin-top: 4px; color: var(--muted); font-size: clamp(.78rem, 3.3vw, .9rem); }
-  /* Topo + menu */
   .topbar { position: relative; padding-top: 14px; }
   .menu-btn {
     width: clamp(40px, 11vw, 48px); aspect-ratio: 1; border-radius: 50%; cursor: pointer;
@@ -90,7 +88,6 @@
   .menu a:hover, .menu a:focus-visible { background: rgba(255,255,255,.08); outline: 0; }
   .menu-user { padding: 10px 14px 12px; margin-bottom: 4px; color: var(--muted); font-size: .85rem; border-bottom: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* Chips / pílulas */
   .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 14px; }
   .chips::-webkit-scrollbar { display: none; }
   .chip {
@@ -101,7 +98,6 @@
   .chip:active { transform: scale(.96); }
   .chip[aria-pressed="true"] { background: var(--grad); color: var(--on-accent); border-color: rgba(255,255,255,.18); }
 
-  /* Cards glass */
   .card {
     background: var(--card); border: 1px solid var(--border); border-radius: 24px;
     padding: clamp(14px, 4vw, 20px); margin-bottom: 14px;
@@ -114,7 +110,6 @@
     padding: .35em 1em; font-size: .8rem; cursor: pointer;
   }
 
-  /* Álbuns */
   .row { display: flex; gap: clamp(10px, 3vw, 16px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; margin: 0 calc(-1 * clamp(14px, 4vw, 20px)); padding: 0 clamp(14px, 4vw, 20px); }
   .row::-webkit-scrollbar { display: none; }
   .album { flex: none; width: clamp(130px, 36vw, 190px); scroll-snap-align: start; }
@@ -129,7 +124,6 @@
   .name { margin-top: 10px; font-weight: 500; font-size: clamp(.9rem, 3.8vw, 1.02rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sub { margin-top: 2px; color: var(--muted); font-size: clamp(.78rem, 3.3vw, .9rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Músicas salvas */
   .songs { list-style: none; }
   .song { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .song:last-child { border-bottom: 0; }
@@ -142,7 +136,6 @@
   .play svg { width: 18px; height: 18px; }
   .empty { color: var(--muted); font-size: .9rem; padding: 4px 0; }
 
-  /* Busca */
   .search {
     display: flex; align-items: center; gap: 10px; background: #0c0a0d; border: 1px solid var(--border);
     border-radius: 999px; padding: 0 16px; height: 50px; margin-bottom: 18px;
@@ -164,7 +157,6 @@
   .t5 { background: linear-gradient(145deg, #7d6a52, #231c14); }
   .t6 { background: linear-gradient(145deg, #4e7068, #121f1c); }
 
-  /* Biblioteca */
   .list { display: flex; flex-direction: column; }
   .item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
   .item:last-child { border-bottom: 0; }
@@ -173,7 +165,6 @@
   .item b { display: block; font-weight: 500; font-size: 1rem; }
   .item span { color: var(--muted); font-size: .85rem; }
 
-  /* Navegação inferior */
   .nav {
     position: fixed; z-index: 10; left: 0; right: 0;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
@@ -220,7 +211,6 @@
     <a class="menu-out" href="/logout">Sair</a>
   </nav>
 
-  <!-- HOME  (rota: /) -->
   <main class="view" id="v-home" data-title="Início">
     <div class="head">
       <div>
@@ -251,7 +241,6 @@
     </section>
   </main>
 
-  <!-- SEARCH  (rota: /search) -->
   <main class="view" id="v-search" data-title="Buscar" hidden>
     <div class="head"><div><h1>Buscar</h1><p>Encontre músicas, artistas e podcasts</p></div></div>
     <label class="search">
@@ -268,7 +257,6 @@
     </section>
   </main>
 
-  <!-- LIBRARY  (rota: /library) -->
   <main class="view" id="v-library" data-title="Sua biblioteca" hidden>
     <div class="head"><div><h1>Sua <em>Biblioteca</em></h1><p>Tudo o que você salvou em um só lugar</p></div></div>
     <div class="chips" role="group" aria-label="Filtros da biblioteca">
@@ -299,15 +287,10 @@
   </div>
 </nav>
 
-<!-- Dados do Flask. No servidor, troque o conteúdo desta tag por: {{ payload|tojson }}
-     Formato: {"name": "Nome" | null, "color": "#ff4d6d" | null, "data": [{"music_name": "...", "src": "/musics/x.mp3"}] | null} -->
 <script id="flask-data" type="application/json">
 {{ payload|tojson }}
 </script>
 <script>
-  // Rotas: "/" , "/search" , "/library"
-  // Em um servidor (ex.: Flask) usa o caminho real via History API.
-  // Fora disso (arquivo local / página hospedada em outro caminho) usa #home, #search, #library.
   var VIEWS = { '/': 'home', '/search': 'search', '/library': 'library' };
   var pathMode = /^https?:$/.test(location.protocol) && VIEWS.hasOwnProperty(location.pathname);
 
@@ -339,8 +322,6 @@
 
   document.querySelectorAll('.tab').forEach(function (t) {
     t.addEventListener('click', function (e) {
-      // No Flask (pathMode) o <a href> navega normalmente para a rota.
-      // Só na prévia/arquivo local usamos #hash para não sair da página.
       if (pathMode) return;
       e.preventDefault();
       go(t.getAttribute('data-route'));
@@ -349,7 +330,6 @@
   window.addEventListener('popstate', function () { render(currentRoute()); });
   window.addEventListener('hashchange', function () { render(currentRoute()); });
 
-  // Chips (um ativo por grupo)
   document.querySelectorAll('.chips').forEach(function (g) {
     g.addEventListener('click', function (e) {
       var c = e.target.closest('.chip');
@@ -358,14 +338,12 @@
       c.setAttribute('aria-pressed', 'true');
     });
   });
-  // Links de exemplo não navegam
   document.querySelectorAll('a[href="#"]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); });
   });
 
   render(currentRoute());
 
-  // ---------- Dados vindos do Flask ----------
   var raw = {};
   try { raw = JSON.parse(document.getElementById('flask-data').textContent) || {}; } catch (e) {}
   function clean(v) {
@@ -379,7 +357,6 @@
   var name = clean(raw.name), color = clean(raw.color), songs = clean(raw.data);
   var root = document.documentElement;
 
-  // Cor da página (None -> branco)
   var accent = '#ffffff';
   if (typeof color === 'string' && window.CSS && CSS.supports('color', color)) accent = color;
   root.style.setProperty('--accent', accent);
@@ -391,7 +368,6 @@
   var lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
   root.style.setProperty('--on-accent', lum > 0.55 ? '#000000' : '#ffffff');
 
-  // Nome: inicial no botão do menu (None -> ícone de menu)
   if (typeof name === 'string') {
     document.getElementById('menuIcon').textContent = Array.from(name)[0].toUpperCase();
     var mu = document.getElementById('menuUser');
@@ -402,7 +378,6 @@
     h.textContent = 'Bem-vindo, '; h.appendChild(em);
   }
 
-  // Menu
   var menuBtn = document.getElementById('menuBtn'), menu = document.getElementById('menu'), scrim = document.getElementById('scrim');
   function setMenu(open) {
     menu.classList.toggle('open', open); scrim.classList.toggle('open', open);
@@ -418,7 +393,6 @@
     if (e.key === 'Escape' && menu.classList.contains('open')) { setMenu(false); menuBtn.focus(); }
   });
 
-  // Painel de download (YouTube) -> POST /download no Flask
   var dlForm = document.getElementById('dlForm'), dlUrl = document.getElementById('dlUrl'),
       dlBtn = document.getElementById('dlBtn'), dlStatus = document.getElementById('dlStatus');
   var YT = /^(https?:\/\/)?(www\.|m\.|music\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[\w-]{6,}/i;
@@ -438,7 +412,6 @@
     }).then(function (res) {
       var ct = res.headers.get('content-type') || '';
       if (ct.indexOf('application/json') > -1) {
-        // Resposta JSON: {message, download_url} ou {error}
         return res.json().then(function (j) {
           if (!res.ok || j.error) throw new Error(j.error || 'Erro ao baixar.');
           if (j.download_url) saveFile(j.download_url);
@@ -446,7 +419,6 @@
         });
       }
       if (!res.ok) throw new Error('Erro ao baixar.');
-      // Resposta com o arquivo de áudio direto
       var cd = res.headers.get('content-disposition') || '';
       var m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
       var fname = m ? decodeURIComponent(m[1]) : 'musica.mp3';
@@ -465,7 +437,6 @@
     });
   });
 
-  // Músicas salvas (data None -> seção escondida)
   var card = document.getElementById('songsCard'), ul = document.getElementById('songs');
   var PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
   var PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
