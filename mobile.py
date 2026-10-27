@@ -124,7 +124,7 @@ def settings():
         with open("data.json", mode="r", encoding="utf-8") as arq:
             data = json.load(arq)
         data["user"] = new_name
-        data["color_app"] = "#" + new_color
+        data["color_app"] = "#" + new_color if not "#" in str(new_color) else new_color
 
         with open("data.json", mode="w+", encoding="utf-8") as arq:
             json.dump(data, arq, ensure_ascii=False, indent=4)
@@ -164,4 +164,5 @@ def not_found(error):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8888, debug=True)
+    print("[ LOG ] Spotify Free Ativado! Acesse: http://127.0.0.1:8888")
+    app.run(host="0.0.0.0", port=8888, debug=False)
