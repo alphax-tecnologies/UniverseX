@@ -135,6 +135,43 @@
   .play:disabled { opacity: .35; cursor: default; }
   .play svg { width: 18px; height: 18px; }
   .empty { color: var(--muted); font-size: .9rem; padding: 4px 0; }
+  .song-name.live { cursor: pointer; color: var(--accent); }
+  .batch { width: 100%; min-height: 110px; resize: vertical; background: #0c0a0d; border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 14px; outline: 0; font-size: .95rem; line-height: 1.5; }
+  .batch:focus { border-color: var(--accent); }
+  .qlist { list-style: none; margin-top: 12px; font-size: .85rem; }
+  .qlist li { display: flex; gap: 10px; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--muted); }
+  .qlist li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qlist .run { color: var(--text); }
+  .qlist .ok { color: #8fe3b0; }
+  .qlist .err { color: #ff8a9b; }
+  .sheet { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.6); opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
+  .sheet.open { opacity: 1; visibility: visible; transition: opacity .3s; }
+  .player { width: 100%; max-width: 480px; background: #110e12; border: 1px solid var(--border); border-radius: 28px 28px 0 0; padding: 14px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 24px); text-align: center; transform: translateY(40px); transition: transform .35s cubic-bezier(.4,0,.2,1); }
+  .sheet.open .player { transform: none; }
+  .p-top { display: flex; justify-content: flex-end; }
+  .cbtn { width: 48px; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+  .cbtn svg { width: 22px; height: 22px; }
+  .p-top .cbtn { width: 40px; }
+  .p-top .cbtn svg { width: 18px; height: 18px; }
+  .cbtn.main { width: 68px; border: 0; background: var(--grad); color: var(--on-accent); }
+  .cbtn.main svg { width: 30px; height: 30px; }
+  .disc { width: min(62vw, 230px); aspect-ratio: 1; margin: 4px auto 18px; border-radius: 50%; background: repeating-radial-gradient(circle at center, #1b171d 0 3px, #0e0b10 3px 6px); border: 1px solid var(--border); display: grid; place-items: center; box-shadow: 0 0 50px color-mix(in srgb, var(--accent) 30%, transparent); animation: spin 6s linear infinite; animation-play-state: paused; }
+  .disc.on { animation-play-state: running; }
+  .disc i { display: block; position: relative; width: 34%; aspect-ratio: 1; border-radius: 50%; background: var(--grad); }
+  .disc i::after { content: ""; position: absolute; inset: 42%; border-radius: 50%; background: #0e0b10; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .eq { display: flex; justify-content: center; align-items: flex-end; gap: 4px; height: 22px; margin-bottom: 14px; }
+  .eq b { width: 4px; height: 100%; border-radius: 2px; background: var(--accent); transform-origin: bottom; transform: scaleY(.2); animation: eq 1s ease-in-out infinite; animation-play-state: paused; }
+  .eq.on b { animation-play-state: running; }
+  .eq b:nth-child(2) { animation-delay: -.2s; }
+  .eq b:nth-child(3) { animation-delay: -.5s; }
+  .eq b:nth-child(4) { animation-delay: -.7s; }
+  .eq b:nth-child(5) { animation-delay: -.35s; }
+  @keyframes eq { 50% { transform: scaleY(1); } }
+  .p-title { font-size: 1.25rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .seek { width: 100%; margin: 18px 0 6px; accent-color: var(--accent); }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: .82rem; }
+  .ctrls { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 14px; }
 
   .search {
     display: flex; align-items: center; gap: 10px; background: #0c0a0d; border: 1px solid var(--border);
@@ -225,15 +262,13 @@
     </div>
     <section class="card" id="dlCard" data-endpoint="/download" aria-labelledby="dlh">
       <div class="card-top"><h2 id="dlh">Baixar música</h2></div>
-      <p class="hint">Cole o link de um vídeo do YouTube para baixar o áudio.</p>
+      <p class="hint">Cole um link do YouTube por linha para baixar várias músicas, uma após a outra.</p>
       <form id="dlForm" novalidate>
-        <label class="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/></svg>
-          <input id="dlUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..." aria-label="URL do vídeo do YouTube">
-        </label>
-        <button class="btn" id="dlBtn" type="submit">Baixar música</button>
+        <textarea class="batch" id="dlList" rows="4" spellcheck="false" placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..." aria-label="Links do YouTube, um por linha"></textarea>
+        <button class="btn" id="dlBtn" type="submit">Baixar todas</button>
       </form>
       <p class="status" id="dlStatus" role="status" aria-live="polite"></p>
+      <ul class="qlist" id="dlQueue"></ul>
     </section>
     <section class="card" id="songsCard" aria-labelledby="sv" hidden>
       <div class="card-top"><h2 id="sv">Músicas salvas</h2></div>
@@ -286,6 +321,22 @@
     </a>
   </div>
 </nav>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Tocando agora">
+  <div class="player">
+    <div class="p-top"><button class="cbtn" id="pClose" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="disc" id="disc"><i></i></div>
+    <div class="eq" id="eq"><b></b><b></b><b></b><b></b><b></b></div>
+    <p class="p-title" id="pTitle"></p>
+    <input class="seek" id="seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Progresso da música">
+    <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+    <div class="ctrls">
+      <button class="cbtn" id="pPrev" type="button" aria-label="Voltar música"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="cbtn main" id="pPlay" type="button" aria-label="Pausar"></button>
+      <button class="cbtn" id="pNext" type="button" aria-label="Avançar música"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    </div>
+  </div>
+</div>
 
 <script id="flask-data" type="application/json">
 {{ payload|tojson }}
@@ -393,8 +444,9 @@
     if (e.key === 'Escape' && menu.classList.contains('open')) { setMenu(false); menuBtn.focus(); }
   });
 
-  var dlForm = document.getElementById('dlForm'), dlUrl = document.getElementById('dlUrl'),
-      dlBtn = document.getElementById('dlBtn'), dlStatus = document.getElementById('dlStatus');
+  var dlForm = document.getElementById('dlForm'), dlList = document.getElementById('dlList'),
+      dlBtn = document.getElementById('dlBtn'), dlStatus = document.getElementById('dlStatus'),
+      dlQueue = document.getElementById('dlQueue');
   var YT = /^(https?:\/\/)?(www\.|m\.|music\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[\w-]{6,}/i;
   function say(msg, kind) { dlStatus.textContent = msg; dlStatus.className = 'status' + (kind ? ' ' + kind : ''); }
   function saveFile(href, filename) {
@@ -402,12 +454,8 @@
     a.href = href; a.download = filename || '';
     document.body.appendChild(a); a.click(); a.remove();
   }
-  dlForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var url = dlUrl.value.trim();
-    if (!YT.test(url)) { say('Cole um link válido do YouTube.', 'err'); dlUrl.focus(); return; }
-    dlBtn.disabled = true; dlBtn.textContent = 'Baixando…'; say('Processando o vídeo, aguarde…');
-    fetch(document.getElementById('dlCard').getAttribute('data-endpoint'), {
+  function sendOne(url) {
+    return fetch(document.getElementById('dlCard').getAttribute('data-endpoint'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url })
     }).then(function (res) {
       var ct = res.headers.get('content-type') || '';
@@ -415,7 +463,6 @@
         return res.json().then(function (j) {
           if (!res.ok || j.error) throw new Error(j.error || 'Erro ao baixar.');
           if (j.download_url) saveFile(j.download_url);
-          return j.message || 'Download concluído!';
         });
       }
       if (!res.ok) throw new Error('Erro ao baixar.');
@@ -425,53 +472,155 @@
       return res.blob().then(function (b) {
         var u = URL.createObjectURL(b); saveFile(u, fname);
         setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
-        return 'Download concluído!';
       });
-    }).then(function (msg) {
-      say(msg, 'ok'); dlUrl.value = '';
-    }).catch(function (err) {
-      var t = err && err.message;
-      say(t && t !== 'Failed to fetch' ? t : 'Não foi possível baixar agora. Tente novamente.', 'err');
-    }).then(function () {
-      dlBtn.disabled = false; dlBtn.textContent = 'Baixar música';
+    });
+  }
+  dlForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var urls = dlList.value.split(/\s+/).filter(Boolean);
+    if (!urls.length) { say('Cole pelo menos um link do YouTube.', 'err'); dlList.focus(); return; }
+    dlQueue.textContent = '';
+    var jobs = urls.map(function (u) {
+      var li = document.createElement('li'), l = document.createElement('span'), r = document.createElement('span');
+      l.textContent = u; r.textContent = 'Aguardando';
+      li.appendChild(l); li.appendChild(r); dlQueue.appendChild(li);
+      return { u: u, li: li, st: r };
+    });
+    var ok = 0, fail = 0;
+    dlBtn.disabled = true; dlBtn.textContent = 'Baixando…';
+    jobs.reduce(function (chain, job, i) {
+      return chain.then(function () {
+        say('Baixando ' + (i + 1) + ' de ' + jobs.length + '…');
+        job.li.className = 'run'; job.st.textContent = 'Baixando…';
+        if (!YT.test(job.u)) { job.li.className = 'err'; job.st.textContent = 'Link inválido'; fail++; return; }
+        return sendOne(job.u).then(function () {
+          job.li.className = 'ok'; job.st.textContent = 'Concluído'; ok++;
+        }).catch(function (err) {
+          var t = err && err.message;
+          job.li.className = 'err'; job.st.textContent = t && t !== 'Failed to fetch' ? t : 'Falhou'; fail++;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      say(ok + ' de ' + jobs.length + ' baixadas' + (fail ? ' (' + fail + ' com erro).' : '.'), fail ? 'err' : 'ok');
+      if (!fail) dlList.value = '';
+      dlBtn.disabled = false; dlBtn.textContent = 'Baixar todas';
     });
   });
 
   var card = document.getElementById('songsCard'), ul = document.getElementById('songs');
   var PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
   var PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-  var audio = new Audio(), curBtn = null;
+  var audio = new Audio(), curBtn = null, playlist = [], cur = -1, rising = false, FADE = 3;
+  var sheet = document.getElementById('sheet'), disc = document.getElementById('disc'), eq = document.getElementById('eq'),
+      pTitle = document.getElementById('pTitle'), seek = document.getElementById('seek'),
+      tCur = document.getElementById('tCur'), tDur = document.getElementById('tDur'),
+      pPlay = document.getElementById('pPlay'), pClose = document.getElementById('pClose');
+
   function showIcon(btn, playing) {
     if (!btn) return;
     btn.innerHTML = playing ? PAUSE : PLAY;
     btn.setAttribute('aria-label', playing ? 'Pausar' : 'Tocar');
   }
-  audio.addEventListener('play', function () { showIcon(curBtn, true); });
-  audio.addEventListener('pause', function () { showIcon(curBtn, false); });
-  audio.addEventListener('ended', function () { showIcon(curBtn, false); });
+  function fmt(t) {
+    if (!isFinite(t)) return '0:00';
+    t = Math.floor(t);
+    return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+  }
+  function syncUi() {
+    var playing = !audio.paused;
+    pPlay.innerHTML = playing ? PAUSE : PLAY;
+    pPlay.setAttribute('aria-label', playing ? 'Pausar' : 'Continuar');
+    disc.classList.toggle('on', playing);
+    eq.classList.toggle('on', playing);
+    showIcon(curBtn, playing);
+  }
+  function fadeIn() {
+    rising = true;
+    var t0 = performance.now();
+    function step(now) {
+      var k = Math.min(1, (now - t0) / 1500);
+      audio.volume = k;
+      if (k < 1 && !audio.paused) requestAnimationFrame(step); else rising = false;
+    }
+    requestAnimationFrame(step);
+  }
+  function load(i, soft) {
+    var s = playlist[i];
+    if (!s || !s.src) return;
+    if (curBtn && curBtn !== s.btn) showIcon(curBtn, false);
+    cur = i; curBtn = s.btn;
+    playlist.forEach(function (x) { x.nm.classList.toggle('live', x === s); });
+    audio.src = s.src;
+    pTitle.textContent = s.music_name;
+    tCur.textContent = '0:00'; tDur.textContent = '0:00'; seek.value = 0;
+    audio.volume = soft ? 0 : 1; rising = !!soft;
+    audio.play().then(function () { if (soft) fadeIn(); }).catch(function () { rising = false; audio.volume = 1; syncUi(); });
+  }
+  function stepTo(dir, soft) {
+    if (!playlist.length) return;
+    var id = playlist[Math.max(cur, 0)].id + dir;
+    var i = playlist.findIndex(function (x) { return x.id === id; });
+    if (i < 0) i = dir > 0 ? 0 : playlist.length - 1;
+    load(i, soft);
+  }
+  function togglePlay() {
+    if (cur < 0) return;
+    if (audio.paused) audio.play().catch(function () {}); else audio.pause();
+  }
+  function openSheet() { sheet.classList.add('open'); pClose.focus(); }
+  function closeSheet() { sheet.classList.remove('open'); }
+
+  audio.addEventListener('play', syncUi);
+  audio.addEventListener('pause', syncUi);
+  audio.addEventListener('loadedmetadata', function () { tDur.textContent = fmt(audio.duration); });
+  audio.addEventListener('timeupdate', function () {
+    var d = audio.duration;
+    tCur.textContent = fmt(audio.currentTime);
+    if (isFinite(d) && d > 0) {
+      seek.value = Math.round(audio.currentTime / d * 1000);
+      var left = d - audio.currentTime;
+      if (left <= FADE && !audio.paused) audio.volume = Math.max(0, left / FADE);
+      else if (!rising && audio.volume !== 1) audio.volume = 1;
+    }
+  });
+  audio.addEventListener('ended', function () { showIcon(curBtn, false); stepTo(1, true); });
+  seek.addEventListener('input', function () {
+    if (isFinite(audio.duration)) audio.currentTime = seek.value / 1000 * audio.duration;
+  });
+  pPlay.addEventListener('click', togglePlay);
+  document.getElementById('pNext').addEventListener('click', function () { stepTo(1, false); });
+  document.getElementById('pPrev').addEventListener('click', function () { stepTo(-1, false); });
+  pClose.addEventListener('click', closeSheet);
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet.classList.contains('open')) closeSheet(); });
 
   if (Array.isArray(songs)) {
     card.hidden = false;
-    var items = songs.filter(function (s) { return s && s.music_name; });
+    var items = songs.filter(function (s) { return s && s.music_name; }).map(function (s) {
+      return { music_name: s.music_name, src: s.src, id: Number(s.id) };
+    });
+    var ids = items.map(function (x) { return x.id; });
+    if (ids.some(function (x) { return !isFinite(x) || x < 1; }) || new Set(ids).size !== ids.length) {
+      items.forEach(function (x, i) { x.id = i + 1; });
+    }
+    items.sort(function (a, b) { return a.id - b.id; });
+    playlist = items;
     if (!items.length) {
       var p = document.createElement('p');
       p.className = 'empty'; p.textContent = 'Nenhuma música salva ainda.';
       ul.replaceWith(p);
     }
-    items.forEach(function (s) {
+    items.forEach(function (s, i) {
       var li = document.createElement('li'); li.className = 'song';
       var btn = document.createElement('button'); btn.className = 'play'; btn.type = 'button';
       showIcon(btn, false);
       if (!s.src) btn.disabled = true;
       var nm = document.createElement('span'); nm.className = 'song-name'; nm.textContent = s.music_name;
+      s.btn = btn; s.nm = nm;
       btn.addEventListener('click', function () {
-        if (curBtn === btn && !audio.paused) { audio.pause(); return; }
-        if (curBtn !== btn) {
-          if (curBtn) showIcon(curBtn, false);
-          curBtn = btn; audio.src = s.src;
-        }
-        audio.play().catch(function () { showIcon(btn, false); });
+        if (cur === i) togglePlay(); else load(i, false);
       });
+      nm.addEventListener('click', function () { if (cur === i) openSheet(); });
       li.appendChild(btn); li.appendChild(nm); ul.appendChild(li);
     });
   }

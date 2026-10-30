@@ -4,24 +4,23 @@ from urllib.parse import quote
 import json
 import yt_dlp
 import static_ffmpeg
+from dotenv import load_dotenv
+import requests
 import os
 
 app = Flask(__name__)
+load_dotenv()
 
 MUSICS_DIR = os.path.join(app.root_path, "musics")
 AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".ogg", ".opus", ".webm", ".flac"}
 
-
 def nome_bonito(filename: str) -> str:
-    """'montagem_tenta.mp3' -> 'Montagem Tenta'"""
     base = os.path.splitext(filename)[0].replace("_", " ")
     palavras = base.split()
-    # põe só a 1ª letra de cada palavra em maiúscula (não mexe no resto, ex.: "DJ")
     return " ".join(p[:1].upper() + p[1:] for p in palavras)
 
 
 def listar_musicas():
-    """Retorna a lista de músicas da pasta, ou None se a pasta não existir."""
     if not os.path.isdir(MUSICS_DIR):
         return None
     arquivos = [
@@ -30,8 +29,9 @@ def listar_musicas():
         and os.path.splitext(f)[1].lower() in AUDIO_EXTS
     ]
     arquivos.sort(key=str.lower)
+    ids = 0
     return [
-        {"music_name": nome_bonito(f), "src": "/musics/" + quote(f)}
+        {"music_name": nome_bonito(f), "src": "/musics/" + quote(f), "id":ids+1}
         for f in arquivos
     ]
 

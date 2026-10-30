@@ -26,8 +26,9 @@ def listar_musicas():
         and os.path.splitext(f)[1].lower() in AUDIO_EXTS
     ]
     arquivos.sort(key=str.lower)
+    ids = 0
     return [
-        {"music_name": nome_bonito(f), "src": "/musics/" + quote(f)}
+        {"music_name": nome_bonito(f), "src": "/musics/" + quote(f), "id":ids+1}
         for f in arquivos
     ]
 
