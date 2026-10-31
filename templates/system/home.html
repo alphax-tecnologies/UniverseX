@@ -510,12 +510,15 @@
   var card = document.getElementById('songsCard'), ul = document.getElementById('songs');
   var PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
   var PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-  var audio = new Audio(), curBtn = null, playlist = [], cur = -1, rising = false, FADE = 3;
+  var SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+  var FADE = 3, curBtn = null, playlist = [], cur = -1, mixing = false, ctx = null, unlocked = false, act = 0;
+  var decks = [new Audio(), new Audio()], gains = [null, null];
   var sheet = document.getElementById('sheet'), disc = document.getElementById('disc'), eq = document.getElementById('eq'),
       pTitle = document.getElementById('pTitle'), seek = document.getElementById('seek'),
       tCur = document.getElementById('tCur'), tDur = document.getElementById('tDur'),
       pPlay = document.getElementById('pPlay'), pClose = document.getElementById('pClose');
-
+  function noop() {}
+  function audio() { return decks[act]; }
   function showIcon(btn, playing) {
     if (!btn) return;
     btn.innerHTML = playing ? PAUSE : PLAY;
@@ -527,65 +530,126 @@
     return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
   }
   function syncUi() {
-    var playing = !audio.paused;
+    var playing = !audio().paused;
     pPlay.innerHTML = playing ? PAUSE : PLAY;
     pPlay.setAttribute('aria-label', playing ? 'Pausar' : 'Continuar');
     disc.classList.toggle('on', playing);
     eq.classList.toggle('on', playing);
     showIcon(curBtn, playing);
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   }
-  function fadeIn() {
-    rising = true;
-    var t0 = performance.now();
-    function step(now) {
-      var k = Math.min(1, (now - t0) / 1500);
-      audio.volume = k;
-      if (k < 1 && !audio.paused) requestAnimationFrame(step); else rising = false;
-    }
-    requestAnimationFrame(step);
+  function ensureCtx() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(noop); return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      ctx = new AC();
+      decks.forEach(function (d, k) {
+        var g = ctx.createGain();
+        ctx.createMediaElementSource(d).connect(g);
+        g.connect(ctx.destination);
+        gains[k] = g;
+      });
+    } catch (e) { ctx = null; gains = [null, null]; }
   }
-  function load(i, soft) {
+  function unlock() {
+    if (unlocked) return;
+    unlocked = true;
+    var d = decks[1 - act];
+    d.src = SILENT;
+    d.play().catch(noop);
+  }
+  function setGain(k, v) {
+    if (gains[k]) { gains[k].gain.cancelScheduledValues(0); gains[k].gain.setValueAtTime(v, ctx.currentTime); }
+    else decks[k].volume = v;
+  }
+  function ramp(k, up, dur) {
+    var g = gains[k].gain, n = 32, c = new Float32Array(n);
+    for (var j = 0; j < n; j++) { var t = j / (n - 1) * Math.PI / 2; c[j] = up ? Math.sin(t) : Math.cos(t); }
+    g.cancelScheduledValues(0);
+    g.setValueAtTime(c[0], ctx.currentTime);
+    g.setValueCurveAtTime(c, ctx.currentTime, dur);
+  }
+  function load(i, mix) {
     var s = playlist[i];
     if (!s || !s.src) return;
+    ensureCtx(); unlock();
+    var from = act, to = 1 - act, prev = cur;
+    var dur = mix && ctx && isFinite(decks[from].duration) ? Math.max(0.5, decks[from].duration - decks[from].currentTime) : 0;
     if (curBtn && curBtn !== s.btn) showIcon(curBtn, false);
     cur = i; curBtn = s.btn;
     playlist.forEach(function (x) { x.nm.classList.toggle('live', x === s); });
-    audio.src = s.src;
     pTitle.textContent = s.music_name;
     tCur.textContent = '0:00'; tDur.textContent = '0:00'; seek.value = 0;
-    audio.volume = soft ? 0 : 1; rising = !!soft;
-    audio.play().then(function () { if (soft) fadeIn(); }).catch(function () { rising = false; audio.volume = 1; syncUi(); });
+    if ('mediaSession' in navigator && window.MediaMetadata) {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: s.music_name, album: 'Músicas salvas' });
+    }
+    if (dur) { setGain(to, 0); mixing = true; }
+    else { decks.forEach(function (d) { d.pause(); }); mixing = false; setGain(to, 1); }
+    act = to;
+    decks[to].src = s.src;
+    decks[to].play().then(function () {
+      if (dur) { ramp(to, true, dur); ramp(from, false, dur); }
+    }).catch(function () {
+      if (dur) { act = from; cur = prev; mixing = false; setGain(from, 1); }
+      syncUi();
+    });
   }
-  function stepTo(dir, soft) {
+  function stepTo(dir, mix) {
     if (!playlist.length) return;
     var id = playlist[Math.max(cur, 0)].id + dir;
     var i = playlist.findIndex(function (x) { return x.id === id; });
     if (i < 0) i = dir > 0 ? 0 : playlist.length - 1;
-    load(i, soft);
+    load(i, mix);
   }
   function togglePlay() {
     if (cur < 0) return;
-    if (audio.paused) audio.play().catch(function () {}); else audio.pause();
+    ensureCtx();
+    if (audio().paused) {
+      audio().play().catch(noop);
+      if (mixing) decks[1 - act].play().catch(noop);
+    } else {
+      decks.forEach(function (d) { d.pause(); });
+    }
   }
   function openSheet() { sheet.classList.add('open'); pClose.focus(); }
   function closeSheet() { sheet.classList.remove('open'); }
 
-  audio.addEventListener('play', syncUi);
-  audio.addEventListener('pause', syncUi);
-  audio.addEventListener('loadedmetadata', function () { tDur.textContent = fmt(audio.duration); });
-  audio.addEventListener('timeupdate', function () {
-    var d = audio.duration;
-    tCur.textContent = fmt(audio.currentTime);
-    if (isFinite(d) && d > 0) {
-      seek.value = Math.round(audio.currentTime / d * 1000);
-      var left = d - audio.currentTime;
-      if (left <= FADE && !audio.paused) audio.volume = Math.max(0, left / FADE);
-      else if (!rising && audio.volume !== 1) audio.volume = 1;
-    }
+  decks.forEach(function (d, k) {
+    d.preload = 'auto';
+    d.addEventListener('play', syncUi);
+    d.addEventListener('pause', syncUi);
+    d.addEventListener('loadedmetadata', function () { if (k === act) tDur.textContent = fmt(d.duration); });
+    d.addEventListener('timeupdate', function () {
+      if (k !== act) return;
+      var t = d.duration;
+      tCur.textContent = fmt(d.currentTime);
+      if (!isFinite(t) || t <= 0) return;
+      seek.value = Math.round(d.currentTime / t * 1000);
+      if (ctx && !mixing && !d.paused && t > FADE * 2 && t - d.currentTime <= FADE) stepTo(1, true);
+    });
+    d.addEventListener('ended', function () {
+      if (k !== act) { mixing = false; return; }
+      showIcon(curBtn, false);
+      stepTo(1, false);
+    });
   });
-  audio.addEventListener('ended', function () { showIcon(curBtn, false); stepTo(1, true); });
+
+  if ('mediaSession' in navigator) {
+    var handlers = {
+      play: function () { if (audio().paused) togglePlay(); },
+      pause: function () { if (!audio().paused) togglePlay(); },
+      previoustrack: function () { stepTo(-1, false); },
+      nexttrack: function () { stepTo(1, false); },
+      seekto: function (e) { if (isFinite(e.seekTime)) audio().currentTime = e.seekTime; }
+    };
+    Object.keys(handlers).forEach(function (a) {
+      try { navigator.mediaSession.setActionHandler(a, handlers[a]); } catch (e) {}
+    });
+  }
+
   seek.addEventListener('input', function () {
-    if (isFinite(audio.duration)) audio.currentTime = seek.value / 1000 * audio.duration;
+    if (isFinite(audio().duration)) audio().currentTime = seek.value / 1000 * audio().duration;
   });
   pPlay.addEventListener('click', togglePlay);
   document.getElementById('pNext').addEventListener('click', function () { stepTo(1, false); });
